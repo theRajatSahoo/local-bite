@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Restaurants — LocalBite Admin</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <div class="admin-brand">🍽️ Local<span>Bite</span> Admin</div>
+    <nav class="admin-nav">
+      <a href="/admin/index.html">🏠 Dashboard</a>
+      <a href="/admin/restaurants.html" class="active">🏪 Restaurants</a>
+      <a href="/admin/menu.html">📋 Menu Items</a>
+      <a href="/admin/orders.html">📦 Orders</a>
+      <a href="/admin/offers.html">🎁 Offers</a>
+      <a href="/admin/areas.html">📍 Service Areas</a>
+      <a href="/" style="margin-top:2rem;border-top:1px solid var(--border);padding-top:1rem;">← View Site</a>
+    </nav>
+  </aside>
+  <div class="admin-main">
+    <div class="admin-topbar">
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <button class="admin-hamburger" id="admin-hamburger" onclick="toggleAdminSidebar()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <h1>Restaurants</h1>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openModal()">+ Add Restaurant</button>
+    </div>
+    <div class="admin-content">
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Name</th><th>Area</th><th>Category</th><th>Rating</th><th>Delivery Time</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="restaurants-body"><tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Add Restaurant</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id" />
+      <div class="form-group"><label class="form-label">Restaurant Name *</label><input id="r-name" class="form-control" placeholder="e.g. Biryani Palace" /></div>
+      <div class="form-group"><label class="form-label">Address *</label><input id="r-address" class="form-control" placeholder="Street address" /></div>
+      <div class="form-group"><label class="form-label">Area *</label><select id="r-area" class="form-control"><option value="">Select area</option></select></div>
+      <div class="form-group"><label class="form-label">Category</label><input id="r-category" class="form-control" placeholder="e.g. Biryani & Rice" /></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-group"><label class="form-label">Rating (1–5)</label><input id="r-rating" class="form-control" type="number" min="1" max="5" step="0.1" placeholder="4.0" /></div>
+        <div class="form-group"><label class="form-label">Delivery Time</label><input id="r-delivery-time" class="form-control" placeholder="30-45 min" /></div>
+      </div>
+      <div class="form-group" style="display:flex;align-items:center;gap:0.75rem;">
+        <label class="form-label" style="margin:0;">Currently Open</label>
+        <div class="toggle-switch" onclick="toggleOpen()">
+          <div class="toggle-track" id="open-toggle"><div class="toggle-thumb"></div></div>
+          <span id="open-label" style="font-size:0.85rem;color:var(--text-muted);">Yes</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveRestaurant()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/admin-sidebar.js"></script>
+<script>
+let isOpen = true;
+async function loadAreas() {
+  const areas = await API.get('/areas/all');
+  const sel = document.getElementById('r-area');
+  sel.innerHTML = '<option value="">Select area</option>' + areas.map(a=>`<option value="${a.name}">${a.name}</option>`).join('');
+}
+async function loadRestaurants() {
+  const list = await API.get('/restaurants');
+  const tbody = document.getElementById('restaurants-body');
+  tbody.innerHTML = list.length === 0
+    ? '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No restaurants added yet</td></tr>'
+    : list.map(r=>`<tr>
+        <td><strong>${r.name}</strong></td>
+        <td>${r.area}</td><td>${r.category}</td>
+        <td>⭐ ${r.rating}</td><td>${r.deliveryTime}</td>
+        <td><span class="badge ${r.isOpen?'badge-success':'badge-danger'}">${r.isOpen?'Open':'Closed'}</span></td>
+        <td>
+          <button class="action-btn" onclick='editRestaurant(${JSON.stringify(r)})'>✏️ Edit</button>
+          <button class="action-btn danger" onclick="deleteRestaurant('${r._id}','${r.name}')">🗑️</button>
+        </td>
+      </tr>`).join('');
+}
+function toggleOpen() {
+  isOpen = !isOpen;
+  document.getElementById('open-toggle').className = 'toggle-track ' + (isOpen ? 'on' : '');
+  document.getElementById('open-label').textContent = isOpen ? 'Yes' : 'No';
+}
+function openModal(reset=true) {
+  if (reset) { document.getElementById('edit-id').value=''; document.getElementById('modal-title').textContent='Add Restaurant'; ['r-name','r-address','r-category','r-rating','r-delivery-time'].forEach(id=>document.getElementById(id).value=''); isOpen=true; document.getElementById('open-toggle').className='toggle-track on'; document.getElementById('open-label').textContent='Yes'; }
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+function editRestaurant(r) {
+  document.getElementById('edit-id').value=r._id;
+  document.getElementById('modal-title').textContent='Edit Restaurant';
+  document.getElementById('r-name').value=r.name;
+  document.getElementById('r-address').value=r.address;
+  document.getElementById('r-area').value=r.area;
+  document.getElementById('r-category').value=r.category;
+  document.getElementById('r-rating').value=r.rating;
+  document.getElementById('r-delivery-time').value=r.deliveryTime;
+  isOpen=r.isOpen; document.getElementById('open-toggle').className='toggle-track '+(isOpen?'on':'');
+  document.getElementById('open-label').textContent=isOpen?'Yes':'No';
+  openModal(false);
+}
+async function saveRestaurant() {
+  const id = document.getElementById('edit-id').value;
+  const body = { name:document.getElementById('r-name').value, address:document.getElementById('r-address').value, area:document.getElementById('r-area').value, category:document.getElementById('r-category').value, rating:parseFloat(document.getElementById('r-rating').value)||4.0, deliveryTime:document.getElementById('r-delivery-time').value||'30-45 min', isOpen };
+  try {
+    if (id) await API.put(`/restaurants/${id}`, body); else await API.post('/restaurants', body);
+    closeModal(); loadRestaurants(); showToast('Restaurant saved!','success');
+  } catch(e) { showToast('Failed to save: '+e.message,'error'); }
+}
+async function deleteRestaurant(id,name) {
+  if (!confirm(`Delete "${name}"?`)) return;
+  await API.delete(`/restaurants/${id}`); loadRestaurants(); showToast('Deleted','success');
+}
+loadAreas(); loadRestaurants();
+</script>
+</body>
+</html>

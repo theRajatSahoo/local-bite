@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LocalBite — Food Delivery in Choudwar</title>
+  <meta name="description" content="Order fresh food from local restaurants in Choudwar, Jobra, Niali and nearby areas. Fast delivery, Cash on Delivery." />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <nav class="navbar" style="position:relative;">
+    <div class="container">
+      <a class="navbar-brand" href="/">🍽️ Local<span>Bite</span></a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="/cart.html">Cart</a>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <button class="cart-btn" onclick="window.location='/cart.html'">
+          🛒 Cart <span class="cart-count" id="cart-count">0</span>
+        </button>
+        <button class="hamburger" id="hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+    <nav class="mobile-nav" id="mobile-nav">
+      <a href="/">🏠 Home</a>
+      <a href="/cart.html">🛒 Cart</a>
+    </nav>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-badge">📍 Serving Choudwar &amp; nearby areas</div>
+        <h1>Hungry? We've got you covered 🍛</h1>
+        <p>Order from the best local restaurants near you. Fresh food, fast delivery, Cash on Delivery.</p>
+        <div class="hero-area">
+          <span>📍</span>
+          <select id="area-select">
+            <option value="">Loading areas...</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OFFERS BANNERS -->
+  <div class="container" id="offer-banners-wrapper" style="margin-top:1.25rem;"></div>
+
+  <!-- RESTAURANTS -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2>🏪 Restaurants Near You</h2>
+        <span id="restaurant-count" style="color:var(--text-muted);font-size:0.88rem;"></span>
+      </div>
+      <div class="restaurants-grid" id="restaurants-grid">
+        <!-- Skeleton loaders -->
+        <div class="restaurant-card" style="min-height:220px;opacity:0.4;pointer-events:none;"></div>
+        <div class="restaurant-card" style="min-height:220px;opacity:0.4;pointer-events:none;"></div>
+        <div class="restaurant-card" style="min-height:220px;opacity:0.4;pointer-events:none;"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p>© 2025 LocalBite · Serving Choudwar & nearby areas · Cash on Delivery</p>
+    </div>
+  </footer>
+
+  <script src="/js/api.js"></script>
+<script src="/js/cart.js"></script>
+<script src="/js/offers.js"></script>
+<script src="/js/app.js"></script>
+  <script>
+    function toggleMobileNav() {
+      document.getElementById('hamburger').classList.toggle('open');
+      document.getElementById('mobile-nav').classList.toggle('open');
+    }
+  </script>
+</body>
+</html>

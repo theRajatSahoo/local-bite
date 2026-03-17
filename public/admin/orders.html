@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orders — LocalBite Admin</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <div class="admin-brand">🍽️ Local<span>Bite</span> Admin</div>
+    <nav class="admin-nav">
+      <a href="/admin/index.html">🏠 Dashboard</a>
+      <a href="/admin/restaurants.html">🏪 Restaurants</a>
+      <a href="/admin/menu.html">📋 Menu Items</a>
+      <a href="/admin/orders.html" class="active">📦 Orders</a>
+      <a href="/admin/offers.html">🎁 Offers</a>
+      <a href="/admin/areas.html">📍 Service Areas</a>
+      <a href="/" style="margin-top:2rem;border-top:1px solid var(--border);padding-top:1rem;">← View Site</a>
+    </nav>
+  </aside>
+  <div class="admin-main">
+    <div class="admin-topbar">
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <button class="admin-hamburger" id="admin-hamburger" onclick="toggleAdminSidebar()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <h1>Orders</h1>
+      </div>
+      <div style="display:flex;gap:0.75rem;align-items:center;">
+        <select id="status-filter" class="status-select" onchange="loadOrders()">
+          <option value="">All Status</option>
+          <option>Placed</option>
+          <option>Preparing</option>
+          <option>Out for Delivery</option>
+          <option>Delivered</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="loadOrders()">↻ Refresh</button>
+      </div>
+    </div>
+    <div class="admin-content">
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr><th>ID</th><th>Customer</th><th>Phone</th><th>Area</th><th>Items</th><th>Total</th><th>Status</th><th>Time</th></tr>
+          </thead>
+          <tbody id="orders-body">
+            <tr><td colspan="8" style="text-align:center;color:var(--text-muted);">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/admin-sidebar.js"></script>
+<script>
+  const STATUS_CLASS = { 'Placed':'badge-info','Preparing':'badge-warning','Out for Delivery':'badge-warning','Delivered':'badge-success' };
+  const ALL_STATUSES = ['Placed','Preparing','Out for Delivery','Delivered'];
+
+  async function loadOrders() {
+    const filter = document.getElementById('status-filter').value;
+    const path = filter ? `/orders?status=${encodeURIComponent(filter)}` : '/orders';
+    const orders = await API.get(path);
+    const tbody = document.getElementById('orders-body');
+    if (orders.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);">No orders found</td></tr>';
+      return;
+    }
+    tbody.innerHTML = orders.map(o => `
+      <tr>
+        <td style="font-family:monospace;font-size:0.78rem;">${o._id.slice(-6)}</td>
+        <td>${o.customerName}</td>
+        <td>${o.phone}</td>
+        <td>${o.area}</td>
+        <td style="max-width:180px;font-size:0.8rem;color:var(--text-muted);">${o.items.map(i=>i.name+' ×'+i.qty).join(', ')}</td>
+        <td>₹${o.totalPrice}</td>
+        <td>
+          <select class="status-select" onchange="updateStatus('${o._id}',this.value)">
+            ${ALL_STATUSES.map(s=>`<option value="${s}" ${s===o.status?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </td>
+        <td style="color:var(--text-muted);font-size:0.8rem;">${new Date(o.createdAt).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</td>
+      </tr>
+    `).join('');
+  }
+
+  async function updateStatus(id, status) {
+    try {
+      await API.put(`/orders/${id}/status`, { status });
+      showToast(`Order updated to "${status}"`, 'success');
+    } catch(e) { showToast('Update failed', 'error'); }
+  }
+
+  loadOrders();
+  setInterval(loadOrders, 30000); // Auto-refresh every 30s
+</script>
+</body>
+</html>

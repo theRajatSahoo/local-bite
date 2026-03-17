@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — LocalBite</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/admin.css" />
+  <script>
+  const token = localStorage.getItem('token');
+  if (!token) {
+    window.location.href = '/admin/login.html';
+  }
+</script>
+</head>
+<body>
+<div class="admin-layout">
+  <!-- Sidebar Backdrop -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+  <!-- Sidebar -->
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <div class="admin-brand">🍽️ Local<span>Bite</span> Admin</div>
+    <nav class="admin-nav">
+      <a href="/admin/index.html" class="active">🏠 Dashboard</a>
+      <a href="/admin/restaurants.html">🏪 Restaurants</a>
+      <a href="/admin/menu.html">📋 Menu Items</a>
+      <a href="/admin/orders.html">📦 Orders</a>
+      <a href="/admin/offers.html">🎁 Offers</a>
+      <a href="/admin/areas.html">📍 Service Areas</a>
+      <a href="/" style="margin-top:2rem;border-top:1px solid var(--border);padding-top:1rem;">← View Site</a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <div class="admin-main">
+    <div class="admin-topbar">
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <button class="admin-hamburger" id="admin-hamburger" onclick="toggleAdminSidebar()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <h1>Dashboard</h1>
+      </div>
+      <span style="font-size:0.85rem;color:var(--text-muted);" id="topbar-date"></span>
+    </div>
+    <div class="admin-content">
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card"><div class="stat-value" id="stat-orders">—</div><div class="stat-label">Total Orders</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-today">—</div><div class="stat-label">Today's Orders</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-restaurants">—</div><div class="stat-label">Restaurants</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-areas">—</div><div class="stat-label">Service Areas</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-offers">—</div><div class="stat-label">Active Offers</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-pending">—</div><div class="stat-label">Pending Orders</div></div>
+      </div>
+
+      <!-- Recent Orders -->
+      <div class="admin-table-wrap">
+        <div class="admin-table-header">
+          <h2>Recent Orders</h2>
+          <a href="/admin/orders.html" class="btn btn-outline btn-sm">View All</a>
+        </div>
+        <table class="admin-table">
+          <thead>
+            <tr><th>Order ID</th><th>Customer</th><th>Area</th><th>Total</th><th>Status</th><th>Time</th></tr>
+          </thead>
+          <tbody id="recent-orders-body">
+            <tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/admin-sidebar.js"></script>
+<script>
+  document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  const STATUS_CLASS = { 'Placed':'badge-info','Preparing':'badge-warning','Out for Delivery':'badge-warning','Delivered':'badge-success' };
+
+  async function loadDashboard() {
+    try {
+      const [orders, restaurants, areas, offers] = await Promise.all([
+        API.get('/orders'), API.get('/restaurants'), API.get('/areas/all'), API.get('/offers/all')
+      ]);
+      const today = new Date().toDateString();
+      const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today);
+      const pending = orders.filter(o => o.status !== 'Delivered');
+
+      document.getElementById('stat-orders').textContent = orders.length;
+      document.getElementById('stat-today').textContent = todayOrders.length;
+      document.getElementById('stat-restaurants').textContent = restaurants.length;
+      document.getElementById('stat-areas').textContent = areas.length;
+      document.getElementById('stat-offers').textContent = offers.filter(o => o.active).length;
+      document.getElementById('stat-pending').textContent = pending.length;
+
+      const recent = orders.slice(0, 8);
+      document.getElementById('recent-orders-body').innerHTML = recent.length === 0
+        ? '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No orders yet</td></tr>'
+        : recent.map(o => `
+          <tr>
+            <td style="font-family:monospace;font-size:0.78rem;">${o._id.slice(-6)}</td>
+            <td>${o.customerName}</td>
+            <td>${o.area}</td>
+            <td>₹${o.totalPrice}</td>
+            <td><span class="badge ${STATUS_CLASS[o.status] || 'badge-info'}">${o.status}</span></td>
+            <td style="color:var(--text-muted);">${new Date(o.createdAt).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'})}</td>
+          </tr>
+        `).join('');
+    } catch(e) { console.error(e); }
+  }
+  loadDashboard();
+</script>
+</body>
+</html>

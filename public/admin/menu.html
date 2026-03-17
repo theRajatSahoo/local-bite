@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Menu Items — LocalBite Admin</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <div class="admin-brand">🍽️ Local<span>Bite</span> Admin</div>
+    <nav class="admin-nav">
+      <a href="/admin/index.html">🏠 Dashboard</a>
+      <a href="/admin/restaurants.html">🏪 Restaurants</a>
+      <a href="/admin/menu.html" class="active">📋 Menu Items</a>
+      <a href="/admin/orders.html">📦 Orders</a>
+      <a href="/admin/offers.html">🎁 Offers</a>
+      <a href="/admin/areas.html">📍 Service Areas</a>
+      <a href="/" style="margin-top:2rem;border-top:1px solid var(--border);padding-top:1rem;">← View Site</a>
+    </nav>
+  </aside>
+  <div class="admin-main">
+    <div class="admin-topbar">
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <button class="admin-hamburger" id="admin-hamburger" onclick="toggleAdminSidebar()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <h1>Menu Items</h1>
+      </div>
+      <div style="display:flex;gap:0.75rem;align-items:center;">
+        <select id="restaurant-filter" class="status-select" onchange="loadMenu()">
+          <option value="">All Restaurants</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="openModal()">+ Add Item</button>
+      </div>
+    </div>
+    <div class="admin-content">
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Name</th><th>Restaurant</th><th>Category</th><th>Price</th><th>Type</th><th>Available</th><th>Actions</th></tr></thead>
+          <tbody id="menu-body"><tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Add Menu Item</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id" />
+      <div class="form-group"><label class="form-label">Restaurant *</label><select id="m-restaurant" class="form-control"></select></div>
+      <div class="form-group"><label class="form-label">Item Name *</label><input id="m-name" class="form-control" placeholder="e.g. Chicken Biryani" /></div>
+      <div class="form-group"><label class="form-label">Description</label><input id="m-description" class="form-control" placeholder="Short description" /></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-group"><label class="form-label">Price (₹) *</label><input id="m-price" class="form-control" type="number" placeholder="100" /></div>
+        <div class="form-group"><label class="form-label">Category</label><input id="m-category" class="form-control" placeholder="e.g. Biryani" /></div>
+      </div>
+      <div style="display:flex;gap:1.5rem;margin-top:0.5rem;">
+        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.88rem;">
+          <input type="checkbox" id="m-veg" /> Vegetarian
+        </label>
+        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.88rem;">
+          <input type="checkbox" id="m-available" checked /> Available
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/admin-sidebar.js"></script>
+<script>
+let allRestaurants = [];
+async function init() {
+  allRestaurants = await API.get('/restaurants');
+  const filter = document.getElementById('restaurant-filter');
+  filter.innerHTML = '<option value="">All Restaurants</option>' + allRestaurants.map(r=>`<option value="${r._id}">${r.name}</option>`).join('');
+  const mSel = document.getElementById('m-restaurant');
+  mSel.innerHTML = '<option value="">Select restaurant</option>' + allRestaurants.map(r=>`<option value="${r._id}">${r.name}</option>`).join('');
+  loadMenu();
+}
+async function loadMenu() {
+  const rid = document.getElementById('restaurant-filter').value;
+  const items = rid ? await API.get(`/menu/${rid}`) : (await Promise.all(allRestaurants.map(r=>API.get(`/menu/${r._id}`)))).flat();
+  const tbody = document.getElementById('menu-body');
+  if (items.length===0){ tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No items found</td></tr>'; return; }
+  tbody.innerHTML = items.map(i=>{
+    const rest = allRestaurants.find(r=>r._id===i.restaurantId||r._id===i.restaurantId?._id);
+    return `<tr>
+      <td><strong>${i.name}</strong></td>
+      <td style="font-size:0.8rem;color:var(--text-muted);">${rest?.name||'—'}</td>
+      <td>${i.category}</td>
+      <td>₹${i.price}</td>
+      <td><span class="badge ${i.isVeg?'badge-success':'badge-danger'}">${i.isVeg?'🌿 Veg':'🍖 Non-veg'}</span></td>
+      <td><span class="badge ${i.available?'badge-success':'badge-danger'}">${i.available?'Yes':'No'}</span></td>
+      <td>
+        <button class="action-btn" onclick='editItem(${JSON.stringify(i)})'>✏️ Edit</button>
+        <button class="action-btn danger" onclick="deleteItem('${i._id}','${i.name}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function openModal(reset=true){ if(reset){ document.getElementById('edit-id').value=''; document.getElementById('modal-title').textContent='Add Menu Item'; ['m-name','m-description','m-price','m-category'].forEach(id=>document.getElementById(id).value=''); document.getElementById('m-veg').checked=false; document.getElementById('m-available').checked=true; } document.getElementById('modal-overlay').classList.add('open'); }
+function closeModal(){ document.getElementById('modal-overlay').classList.remove('open'); }
+function editItem(item){ document.getElementById('edit-id').value=item._id; document.getElementById('modal-title').textContent='Edit Menu Item'; document.getElementById('m-restaurant').value=item.restaurantId||''; document.getElementById('m-name').value=item.name; document.getElementById('m-description').value=item.description||''; document.getElementById('m-price').value=item.price; document.getElementById('m-category').value=item.category||''; document.getElementById('m-veg').checked=item.isVeg; document.getElementById('m-available').checked=item.available; openModal(false); }
+async function saveItem(){ const id=document.getElementById('edit-id').value; const body={restaurantId:document.getElementById('m-restaurant').value,name:document.getElementById('m-name').value,description:document.getElementById('m-description').value,price:parseFloat(document.getElementById('m-price').value),category:document.getElementById('m-category').value,isVeg:document.getElementById('m-veg').checked,available:document.getElementById('m-available').checked}; try{ if(id) await API.put(`/menu/${id}`,body); else await API.post('/menu',body); closeModal(); loadMenu(); showToast('Item saved!','success'); }catch(e){ showToast('Error: '+e.message,'error'); } }
+async function deleteItem(id,name){ if(!confirm(`Delete "${name}"?`)) return; await API.delete(`/menu/${id}`); loadMenu(); showToast('Deleted','success'); }
+init();
+</script>
+</body>
+</html>

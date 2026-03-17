@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offers — LocalBite Admin</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <div class="admin-brand">🍽️ Local<span>Bite</span> Admin</div>
+    <nav class="admin-nav">
+      <a href="/admin/index.html">🏠 Dashboard</a>
+      <a href="/admin/restaurants.html">🏪 Restaurants</a>
+      <a href="/admin/menu.html">📋 Menu Items</a>
+      <a href="/admin/orders.html">📦 Orders</a>
+      <a href="/admin/offers.html" class="active">🎁 Offers</a>
+      <a href="/admin/areas.html">📍 Service Areas</a>
+      <a href="/" style="margin-top:2rem;border-top:1px solid var(--border);padding-top:1rem;">← View Site</a>
+    </nav>
+  </aside>
+  <div class="admin-main">
+    <div class="admin-topbar">
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <button class="admin-hamburger" id="admin-hamburger" onclick="toggleAdminSidebar()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <h1>Offers &amp; Promotions</h1>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openModal()">+ Create Offer</button>
+    </div>
+    <div class="admin-content">
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr><th>Title</th><th>Restaurant</th><th>Reward Type</th><th>Conditions</th><th>Valid Until</th><th style="text-align:center">Active</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="offers-body">
+            <tr><td colspan="7" style="text-align:center;color:var(--text-muted);">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OFFER BUILDER MODAL -->
+<div class="modal-overlay" id="modal-overlay" style="align-items:flex-start;padding-top:2rem;">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-header">
+      <h3 id="modal-title">Create Offer</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id" />
+
+      <!-- STEP TABS -->
+      <div class="wizard-steps">
+        <div class="wizard-step active" id="tab-1" onclick="goStep(1)">① Basic Info</div>
+        <div class="wizard-step" id="tab-2" onclick="goStep(2)">② Conditions</div>
+        <div class="wizard-step" id="tab-3" onclick="goStep(3)">③ Reward</div>
+      </div>
+
+      <!-- STEP 1 -->
+      <div id="step-1">
+        <div class="form-group"><label class="form-label">Offer Title *</label><input id="o-title" class="form-control" placeholder='e.g. Sunday Biryani Special' onkeyup="updatePreview()" /></div>
+        <div class="form-group"><label class="form-label">Description (shown to users)</label><input id="o-desc" class="form-control" placeholder='e.g. Get Biryani at ₹80 every Sunday!' onkeyup="updatePreview()" /></div>
+        <div class="form-group"><label class="form-label">Restaurant</label>
+          <select id="o-restaurant" class="form-control" onchange="loadMenuItems()">
+            <option value="">All Restaurants</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group"><label class="form-label">Badge Color</label><input id="o-color" class="form-control" type="color" value="#e63946" onchange="updatePreview()" style="height:42px;padding:4px;" /></div>
+          <div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group"><label class="form-label">Valid From</label><input id="o-from" class="form-control" type="date" /></div>
+          <div class="form-group"><label class="form-label">Valid Until</label><input id="o-until" class="form-control" type="date" /></div>
+        </div>
+        <div class="offer-preview" id="offer-preview">
+          <strong id="preview-title" style="color:var(--primary)">Offer Title</strong>
+          <span id="preview-desc" style="color:var(--text-muted);font-size:0.82rem;display:block;margin-top:0.2rem;"></span>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div id="step-2" style="display:none;">
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1.25rem;">Check only the conditions you need. Offer applies when ALL checked conditions pass.</p>
+
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:0.5rem;font-weight:600;font-size:0.88rem;cursor:pointer;">
+            <input type="checkbox" id="c-use-days" onchange="toggleSection('c-days-section',this)"> Apply on specific days only
+          </label>
+          <div id="c-days-section" style="display:none;margin-top:0.75rem;">
+            <div class="checkbox-group" id="days-group">
+              <label class="checkbox-pill" id="day-0"><input type="checkbox" value="0"> Sunday</label>
+              <label class="checkbox-pill" id="day-1"><input type="checkbox" value="1"> Monday</label>
+              <label class="checkbox-pill" id="day-2"><input type="checkbox" value="2"> Tuesday</label>
+              <label class="checkbox-pill" id="day-3"><input type="checkbox" value="3"> Wednesday</label>
+              <label class="checkbox-pill" id="day-4"><input type="checkbox" value="4"> Thursday</label>
+              <label class="checkbox-pill" id="day-5"><input type="checkbox" value="5"> Friday</label>
+              <label class="checkbox-pill" id="day-6"><input type="checkbox" value="6"> Saturday</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:0.5rem;font-weight:600;font-size:0.88rem;cursor:pointer;">
+            <input type="checkbox" id="c-use-minamount" onchange="toggleSection('c-minamount-section',this)"> Minimum order amount
+          </label>
+          <div id="c-minamount-section" style="display:none;margin-top:0.75rem;">
+            <input id="c-minamount" class="form-control" type="number" placeholder="e.g. 300 (₹)" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:0.5rem;font-weight:600;font-size:0.88rem;cursor:pointer;">
+            <input type="checkbox" id="c-use-streak" onchange="toggleSection('c-streak-section',this)"> Required consecutive order days (loyalty)
+          </label>
+          <div id="c-streak-section" style="display:none;margin-top:0.75rem;">
+            <input id="c-streak" class="form-control" type="number" placeholder="e.g. 6 days" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:0.5rem;font-weight:600;font-size:0.88rem;cursor:pointer;">
+            <input type="checkbox" id="c-use-items" onchange="toggleSection('c-items-section',this)"> Apply to specific menu items only
+          </label>
+          <div id="c-items-section" style="display:none;margin-top:0.75rem;">
+            <div id="c-items-list" style="display:flex;flex-direction:column;gap:0.4rem;max-height:180px;overflow-y:auto;"></div>
+            <p style="font-size:0.78rem;color:var(--text-dim);margin-top:0.4rem;">Select a restaurant in Step 1 to see items.</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:0.5rem;font-weight:600;font-size:0.88rem;cursor:pointer;">
+            <input type="checkbox" id="c-use-qty" onchange="toggleSection('c-qty-section',this)"> Minimum item quantity
+          </label>
+          <div id="c-qty-section" style="display:none;margin-top:0.75rem;">
+            <input id="c-qty" class="form-control" type="number" placeholder="e.g. 2" />
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div id="step-3" style="display:none;">
+        <div class="form-group">
+          <label class="form-label">Reward Type *</label>
+          <select id="o-reward-type" class="form-control" onchange="updateRewardFields()">
+            <option value="fixed_price">💰 Fixed Price (set item to a special price)</option>
+            <option value="percentage_off">🏷️ Percentage Off (% off cart total)</option>
+            <option value="flat_off">✂️ Flat Discount (₹ off cart total)</option>
+            <option value="free_item">🎁 Free Item (show reward banner)</option>
+            <option value="custom_message">🎉 Custom Message</option>
+          </select>
+        </div>
+        <div id="reward-fixed_price">
+          <div class="form-group"><label class="form-label">Special Price (₹) *</label><input id="o-fixed-price" class="form-control" type="number" placeholder="e.g. 80" /></div>
+        </div>
+        <div id="reward-percentage_off" style="display:none;">
+          <div class="form-group"><label class="form-label">Percentage Off (%) *</label><input id="o-pct" class="form-control" type="number" placeholder="e.g. 20" /></div>
+        </div>
+        <div id="reward-flat_off" style="display:none;">
+          <div class="form-group"><label class="form-label">Flat Discount (₹) *</label><input id="o-flat" class="form-control" type="number" placeholder="e.g. 50" /></div>
+        </div>
+        <div id="reward-free_item" style="display:none;">
+          <div class="form-group"><label class="form-label">Free Item Name/Description *</label><input id="o-free-item" class="form-control" placeholder="e.g. Chicken Biryani" /></div>
+        </div>
+        <div id="reward-custom_message" style="display:none;">
+          <div class="form-group"><label class="form-label">Custom Message *</label><textarea id="o-custom-msg" class="form-control" placeholder="e.g. Happy Holi! Show this screen to get a free dessert."></textarea></div>
+        </div>
+      </div>
+
+      <!-- Step navigation -->
+      <div style="display:flex;justify-content:space-between;margin-top:1.25rem;">
+        <button class="btn btn-outline btn-sm" id="btn-prev" onclick="goStep(currentStep-1)" style="display:none;">← Previous</button>
+        <button class="btn btn-primary btn-sm" id="btn-next" onclick="goStep(currentStep+1)">Next →</button>
+        <button class="btn btn-success btn-sm" id="btn-save" onclick="saveOffer()" style="display:none;">Save Offer ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/admin-sidebar.js"></script>
+<script>
+let currentStep = 1;
+let allMenuItems = [];
+const REWARD_TYPES = ['fixed_price','percentage_off','flat_off','free_item','custom_message'];
+const REWARD_LABELS = { fixed_price:'Fixed Price', percentage_off:'% Off', flat_off:'Flat Discount', free_item:'Free Item', custom_message:'Custom Message' };
+const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+async function loadOffers() {
+  const offers = await API.get('/offers/all');
+  const tbody = document.getElementById('offers-body');
+  if (!offers.length) { tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No offers yet. Create one!</td></tr>'; return; }
+  tbody.innerHTML = offers.map(o => {
+    const conds = [];
+    if (o.conditions?.daysOfWeek?.length) conds.push('Days: ' + o.conditions.daysOfWeek.map(d=>DAY_NAMES[d]).join(','));
+    if (o.conditions?.minOrderAmount) conds.push('Min ₹'+o.conditions.minOrderAmount);
+    if (o.conditions?.requiredConsecutiveDays) conds.push(o.conditions.requiredConsecutiveDays+'d streak');
+    return `<tr>
+      <td><strong>${o.title}</strong><br><span style="font-size:0.78rem;color:var(--text-dim);">${o.description||''}</span></td>
+      <td style="font-size:0.82rem;">${o.restaurantId?.name||'All'}</td>
+      <td><span class="badge badge-info">${REWARD_LABELS[o.reward?.type]||o.reward?.type}</span></td>
+      <td style="font-size:0.8rem;color:var(--text-muted);">${conds.join(' · ')||'Always active'}</td>
+      <td style="font-size:0.8rem;color:var(--text-muted);">${o.validUntil?new Date(o.validUntil).toLocaleDateString('en-IN'):'No expiry'}</td>
+      <td style="text-align:center;">
+        <div class="toggle-switch" style="justify-content:center;" onclick="toggleOffer('${o._id}')">
+          <div class="toggle-track ${o.active?'on':''}"><div class="toggle-thumb"></div></div>
+        </div>
+      </td>
+      <td>
+        <button class="action-btn" onclick="editOffer('${o._id}')">✏️ Edit</button>
+        <button class="action-btn danger" onclick="deleteOffer('${o._id}','${o.title}')">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadRestaurants() {
+  const rests = await API.get('/restaurants');
+  const sel = document.getElementById('o-restaurant');
+  sel.innerHTML = '<option value="">All Restaurants</option>' + rests.map(r=>`<option value="${r._id}">${r.name}</option>`).join('');
+}
+
+async function loadMenuItems() {
+  const rid = document.getElementById('o-restaurant').value;
+  allMenuItems = rid ? await API.get(`/menu/${rid}`) : [];
+  const list = document.getElementById('c-items-list');
+  list.innerHTML = allMenuItems.map(i=>`
+    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.85rem;background:var(--bg-3);padding:0.4rem 0.75rem;border-radius:6px;">
+      <input type="checkbox" class="item-check" value="${i._id}" data-name="${i.name}" /> ${i.name} <span style="color:var(--text-dim);margin-left:auto;">₹${i.price}</span>
+    </label>
+  `).join('');
+}
+
+function goStep(step) {
+  if (step < 1 || step > 3) return;
+  [1,2,3].forEach(s=>{
+    document.getElementById(`step-${s}`).style.display = s===step?'':'none';
+    document.getElementById(`tab-${s}`).className = 'wizard-step'+(s===step?' active':'');
+  });
+  currentStep = step;
+  document.getElementById('btn-prev').style.display = step>1 ? '' : 'none';
+  document.getElementById('btn-next').style.display = step<3 ? '' : 'none';
+  document.getElementById('btn-save').style.display = step===3 ? '' : 'none';
+}
+
+function toggleSection(id, cb) { document.getElementById(id).style.display = cb.checked ? '' : 'none'; }
+
+function updateRewardFields() {
+  const type = document.getElementById('o-reward-type').value;
+  REWARD_TYPES.forEach(t => { document.getElementById(`reward-${t}`).style.display = t===type?'':'none'; });
+}
+
+function updatePreview() {
+  const title = document.getElementById('o-title').value || 'Offer Title';
+  const desc = document.getElementById('o-desc').value;
+  const color = document.getElementById('o-color').value;
+  const preview = document.getElementById('offer-preview');
+  preview.style.display = '';
+  preview.style.borderLeftColor = color;
+  preview.style.background = color+'22';
+  document.getElementById('preview-title').style.color = color;
+  document.getElementById('preview-title').textContent = title;
+  document.getElementById('preview-desc').textContent = desc;
+}
+
+function openModal(reset=true) {
+  if(reset) {
+    document.getElementById('edit-id').value='';
+    document.getElementById('modal-title').textContent='Create Offer';
+    ['o-title','o-desc','o-from','o-until','o-fixed-price','o-pct','o-flat','o-free-item','o-custom-msg'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    document.getElementById('o-color').value='#e63946';
+    document.getElementById('o-restaurant').value='';
+    document.querySelectorAll('.item-check,#days-group input,[id^="c-use-"]').forEach(el=>el.checked=false);
+    ['c-days-section','c-minamount-section','c-streak-section','c-items-section','c-qty-section'].forEach(id=>document.getElementById(id).style.display='none');
+    document.getElementById('offer-preview').style.display='none';
+    updateRewardFields();
+    goStep(1);
+  }
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+async function editOffer(id) {
+  const o = (await API.get('/offers/all')).find(x=>x._id===id);
+  if(!o) return;
+  openModal(true);
+  document.getElementById('edit-id').value=id;
+  document.getElementById('modal-title').textContent='Edit Offer';
+  document.getElementById('o-title').value=o.title||'';
+  document.getElementById('o-desc').value=o.description||'';
+  document.getElementById('o-restaurant').value=o.restaurantId?._id||o.restaurantId||'';
+  document.getElementById('o-color').value=o.badgeColor||'#e63946';
+  if(o.validFrom) document.getElementById('o-from').value=o.validFrom.slice(0,10);
+  if(o.validUntil) document.getElementById('o-until').value=o.validUntil.slice(0,10);
+
+  const c=o.conditions||{};
+  if(c.daysOfWeek?.length){ document.getElementById('c-use-days').checked=true; toggleSection('c-days-section',document.getElementById('c-use-days')); c.daysOfWeek.forEach(d=>{const el=document.querySelector(`#day-${d} input`);if(el)el.checked=true;}); }
+  if(c.minOrderAmount){ document.getElementById('c-use-minamount').checked=true; toggleSection('c-minamount-section',document.getElementById('c-use-minamount')); document.getElementById('c-minamount').value=c.minOrderAmount; }
+  if(c.requiredConsecutiveDays){ document.getElementById('c-use-streak').checked=true; toggleSection('c-streak-section',document.getElementById('c-use-streak')); document.getElementById('c-streak').value=c.requiredConsecutiveDays; }
+  if(c.minItemQty){ document.getElementById('c-use-qty').checked=true; toggleSection('c-qty-section',document.getElementById('c-use-qty')); document.getElementById('c-qty').value=c.minItemQty; }
+
+  const r=o.reward||{};
+  document.getElementById('o-reward-type').value=r.type||'fixed_price';
+  updateRewardFields();
+  if(r.fixedPrice!=null) document.getElementById('o-fixed-price').value=r.fixedPrice;
+  if(r.percentageOff!=null) document.getElementById('o-pct').value=r.percentageOff;
+  if(r.flatOff!=null) document.getElementById('o-flat').value=r.flatOff;
+  if(r.freeItemName) document.getElementById('o-free-item').value=r.freeItemName;
+  if(r.customMessage) document.getElementById('o-custom-msg').value=r.customMessage;
+  updatePreview();
+}
+
+async function saveOffer() {
+  const id = document.getElementById('edit-id').value;
+  const rewardType = document.getElementById('o-reward-type').value;
+  const useDays = document.getElementById('c-use-days').checked;
+  const daysOfWeek = useDays ? [...document.querySelectorAll('#days-group input:checked')].map(el=>parseInt(el.value)) : [];
+  const selectedItems = [...document.querySelectorAll('.item-check:checked')].map(el=>el.value);
+
+  const body = {
+    title: document.getElementById('o-title').value,
+    description: document.getElementById('o-desc').value,
+    restaurantId: document.getElementById('o-restaurant').value || null,
+    badgeColor: document.getElementById('o-color').value,
+    validFrom: document.getElementById('o-from').value || null,
+    validUntil: document.getElementById('o-until').value || null,
+    active: true,
+    conditions: {
+      daysOfWeek,
+      minOrderAmount: document.getElementById('c-use-minamount').checked ? parseFloat(document.getElementById('c-minamount').value)||null : null,
+      requiredConsecutiveDays: document.getElementById('c-use-streak').checked ? parseInt(document.getElementById('c-streak').value)||null : null,
+      applicableItemIds: selectedItems,
+      minItemQty: document.getElementById('c-use-qty').checked ? parseInt(document.getElementById('c-qty').value)||null : null,
+    },
+    reward: {
+      type: rewardType,
+      fixedPrice: rewardType==='fixed_price' ? parseFloat(document.getElementById('o-fixed-price').value)||null : null,
+      percentageOff: rewardType==='percentage_off' ? parseFloat(document.getElementById('o-pct').value)||null : null,
+      flatOff: rewardType==='flat_off' ? parseFloat(document.getElementById('o-flat').value)||null : null,
+      freeItemName: rewardType==='free_item' ? document.getElementById('o-free-item').value : '',
+      customMessage: rewardType==='custom_message' ? document.getElementById('o-custom-msg').value : '',
+    },
+  };
+  try {
+    if(id) await API.put(`/offers/${id}`, body); else await API.post('/offers', body);
+    closeModal(); loadOffers(); showToast('Offer saved!','success');
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+}
+
+async function toggleOffer(id) {
+  await API.patch(`/offers/${id}/toggle`); loadOffers();
+}
+async function deleteOffer(id,title) {
+  if(!confirm(`Delete offer "${title}"?`)) return;
+  await API.delete(`/offers/${id}`); loadOffers(); showToast('Offer deleted','success');
+}
+
+// Init day pill styling
+document.querySelectorAll('#days-group input').forEach(cb=>{
+  cb.addEventListener('change',()=>{ cb.closest('.checkbox-pill').classList.toggle('checked',cb.checked); });
+});
+
+loadRestaurants(); loadOffers();
+</script>
+</body>
+</html>

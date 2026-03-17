@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Service Areas — LocalBite Admin</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body>
+<div class="admin-layout">
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+  <aside class="admin-sidebar" id="admin-sidebar">
+    <div class="admin-brand">🍽️ Local<span>Bite</span> Admin</div>
+    <nav class="admin-nav">
+      <a href="/admin/index.html">🏠 Dashboard</a>
+      <a href="/admin/restaurants.html">🏪 Restaurants</a>
+      <a href="/admin/menu.html">📋 Menu Items</a>
+      <a href="/admin/orders.html">📦 Orders</a>
+      <a href="/admin/offers.html">🎁 Offers</a>
+      <a href="/admin/areas.html" class="active">📍 Service Areas</a>
+      <a href="/" style="margin-top:2rem;border-top:1px solid var(--border);padding-top:1rem;">← View Site</a>
+    </nav>
+  </aside>
+  <div class="admin-main">
+    <div class="admin-topbar">
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <button class="admin-hamburger" id="admin-hamburger" onclick="toggleAdminSidebar()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <h1>Service Areas</h1>
+      </div>
+    </div>
+    <div class="admin-content">
+      <p style="color:var(--text-muted);margin-bottom:1.5rem;font-size:0.9rem;">
+        Manage which areas orders can be delivered to. Users will only see active areas in the checkout dropdown.
+      </p>
+
+      <!-- Add Area -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem;">
+        <h3 style="margin-bottom:1rem;font-size:0.95rem;">Add New Area</h3>
+        <div style="display:flex;gap:0.75rem;">
+          <input id="new-area-name" class="form-control" placeholder="Enter locality/village name (e.g. Nischintakoili)" style="max-width:360px;" />
+          <button class="btn btn-primary" onclick="addArea()">+ Add Area</button>
+        </div>
+      </div>
+
+      <!-- Areas Table -->
+      <div class="admin-table-wrap">
+        <div class="admin-table-header">
+          <h2>All Service Areas</h2>
+          <span id="area-count" style="font-size:0.85rem;color:var(--text-muted);"></span>
+        </div>
+        <table class="admin-table">
+          <thead>
+            <tr><th>Area Name</th><th style="text-align:center">Active (Deliverable)</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="areas-body">
+            <tr><td colspan="3" style="text-align:center;color:var(--text-muted);">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/admin-sidebar.js"></script>
+<script>
+async function loadAreas() {
+  const areas = await API.get('/areas/all');
+  document.getElementById('area-count').textContent = `${areas.length} areas`;
+  const tbody = document.getElementById('areas-body');
+  tbody.innerHTML = areas.length === 0
+    ? '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">No areas added yet</td></tr>'
+    : areas.map(a => `
+      <tr>
+        <td><strong>${a.name}</strong></td>
+        <td style="text-align:center;">
+          <div class="toggle-switch" style="justify-content:center;" onclick="toggleArea('${a._id}')">
+            <div class="toggle-track ${a.active?'on':''}"><div class="toggle-thumb"></div></div>
+            <span style="font-size:0.82rem;color:var(--text-muted);">${a.active?'Active':'Inactive'}</span>
+          </div>
+        </td>
+        <td>
+          <button class="action-btn danger" onclick="deleteArea('${a._id}','${a.name}')">🗑️ Remove</button>
+        </td>
+      </tr>
+    `).join('');
+}
+
+async function addArea() {
+  const name = document.getElementById('new-area-name').value.trim();
+  if (!name) { showToast('Please enter an area name','warning'); return; }
+  try {
+    await API.post('/areas', { name, active: true });
+    document.getElementById('new-area-name').value = '';
+    loadAreas();
+    showToast(`"${name}" added to service areas`, 'success');
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function toggleArea(id) {
+  await API.patch(`/areas/${id}/toggle`);
+  loadAreas();
+}
+
+async function deleteArea(id, name) {
+  if (!confirm(`Remove "${name}" from service areas? Users from this area won't be able to order.`)) return;
+  await API.delete(`/areas/${id}`);
+  loadAreas();
+  showToast(`"${name}" removed`, 'success');
+}
+
+// Allow Enter key on input
+document.getElementById('new-area-name')?.addEventListener('keydown', e => { if (e.key==='Enter') addArea(); });
+
+loadAreas();
+</script>
+</body>
+</html>

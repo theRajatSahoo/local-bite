@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Menu — LocalBite</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <nav class="navbar" style="position:relative;">
+    <div class="container">
+      <a class="navbar-brand" href="/">🍽️ Local<span>Bite</span></a>
+      <div class="nav-links"><a href="/">Home</a></div>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <button class="cart-btn" onclick="window.location='/cart.html'">
+          🛒 Cart <span class="cart-count" id="cart-count">0</span>
+        </button>
+        <button class="hamburger" id="hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+    <nav class="mobile-nav" id="mobile-nav">
+      <a href="/">🏠 Home</a>
+      <a href="/cart.html">🛒 Cart</a>
+    </nav>
+  </nav>
+
+  <!-- Restaurant Hero -->
+  <section class="restaurant-hero">
+    <div class="container">
+      <div class="breadcrumb" style="margin-bottom:0.75rem;">
+        <a href="/">Home</a> / <span id="restaurant-name-bc">Restaurant</span>
+      </div>
+      <div class="restaurant-hero-content">
+        <div class="restaurant-emoji" id="restaurant-emoji">🍽️</div>
+        <div class="restaurant-info">
+          <h1 id="restaurant-name">Loading...</h1>
+          <div class="restaurant-meta" id="restaurant-meta"></div>
+          <span class="restaurant-category" id="restaurant-category"></span>
+        </div>
+      </div>
+      <div id="offer-banners-wrapper" style="margin-top:1rem;"></div>
+    </div>
+  </section>
+
+  <!-- Menu + Cart -->
+  <section class="section">
+    <div class="container">
+      <div class="menu-layout">
+        <div id="menu-container">
+          <p style="color:var(--text-muted)">Loading menu...</p>
+        </div>
+        <!-- Cart Sidebar -->
+        <div class="cart-sidebar">
+          <h3>🛒 Your Cart</h3>
+          <div id="sidebar-cart-items">
+            <div class="cart-empty">Add items to get started</div>
+          </div>
+          <div id="sidebar-cart-summary" style="display:none;">
+            <hr class="cart-divider" />
+            <div class="cart-row muted"><span>Subtotal</span><span id="subtotal">₹0</span></div>
+            <div class="cart-row muted"><span>Delivery</span><span>₹30</span></div>
+            <div id="cart-offer-note" class="cart-offer-note"></div>
+            <hr class="cart-divider" />
+            <div class="cart-row total"><span>Total</span><span id="total">₹30</span></div>
+            <a href="/checkout.html" class="btn btn-primary btn-full" style="margin-top:1rem;">Proceed to Checkout →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mobile Cart Bottom Bar -->
+  <div class="mobile-cart-bar" id="mobile-cart-bar" onclick="window.location='/cart.html'" style="display:none;">
+    <span id="mobile-cart-label">🛒 View Cart</span>
+    <span id="mobile-cart-total" style="font-size:1.05rem;">₹0</span>
+  </div>
+
+  <footer class="footer"><div class="container"><p>© 2025 LocalBite</p></div></footer>
+
+  <script src="/js/cart.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/offers.js"></script>
+  <script src="/js/restaurant.js"></script>
+  <script>
+    function toggleMobileNav() {
+      document.getElementById('hamburger').classList.toggle('open');
+      document.getElementById('mobile-nav').classList.toggle('open');
+    }
+    // Update mobile cart bar
+    function updateMobileCartBar() {
+      const cart = Cart.getCart();
+      const bar = document.getElementById('mobile-cart-bar');
+      const total = Cart.getTotal();
+      if (!bar) return;
+      if (cart.length > 0) {
+        bar.style.display = 'flex';
+        document.getElementById('mobile-cart-label').textContent = `🛒 ${cart.reduce((s,i)=>s+i.qty,0)} item(s)`;
+        document.getElementById('mobile-cart-total').textContent = `₹${total + 30}`;
+      } else { bar.style.display = 'none'; }
+    }
+    // Monkey-patch Cart.addItem to also update the bar
+    const _origAdd = Cart.addItem.bind(Cart);
+    Cart.addItem = function(...args) { const r = _origAdd(...args); updateMobileCartBar(); return r; };
+    const _origRemove = Cart.removeItem.bind(Cart);
+    Cart.removeItem = function(...args) { const r = _origRemove(...args); updateMobileCartBar(); return r; };
+    updateMobileCartBar();
+  </script>
+</body>
+</html>
