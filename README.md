@@ -18,4 +18,3 @@ LocalBite is a food delivery web application that allows users to order food fro
 - Backend: Node.js, Express
 - Database: MongoDB Atlas
 
-## 📂 Project Structure
