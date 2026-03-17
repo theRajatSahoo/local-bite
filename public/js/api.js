@@ -2,73 +2,61 @@ const API = {
   base: '/api',
 
   getToken() {
-    return localStorage.getItem('token');
+    return localStorage.getItem("token");
   },
 
-  getHeaders(isJson = false) {
+  async request(endpoint, options = {}) {
     const token = this.getToken();
 
-    return {
-      ...(isJson && { 'Content-Type': 'application/json' }),
-      ...(token && { Authorization: `Bearer ${token}` })
-    };
-  },
+    const res = await fetch(this.base + endpoint, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
 
-  async handleResponse(res) {
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(text || 'API Error');
+    // Auto-redirect to login on auth failure
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem("token");
+      window.location.href = "/admin/login.html";
+      return;
     }
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || data.message || "Request failed");
+    }
+
     return res.json();
   },
 
-  async get(path) {
-    const res = await fetch(this.base + path, {
-      headers: this.getHeaders()
-    });
-    return this.handleResponse(res);
+  get(endpoint) {
+    return this.request(endpoint, { method: 'GET' });
   },
 
-  async post(path, body) {
-    const res = await fetch(this.base + path, {
+  post(endpoint, body) {
+    return this.request(endpoint, {
       method: 'POST',
-      headers: this.getHeaders(true),
       body: JSON.stringify(body),
     });
-    return this.handleResponse(res);
   },
 
-  async put(path, body) {
-    const res = await fetch(this.base + path, {
+  put(endpoint, body) {
+    return this.request(endpoint, {
       method: 'PUT',
-      headers: this.getHeaders(true),
       body: JSON.stringify(body),
     });
-    return this.handleResponse(res);
   },
 
-  async patch(path, body = {}) {
-    const res = await fetch(this.base + path, {
+  patch(endpoint, body) {
+    return this.request(endpoint, {
       method: 'PATCH',
-      headers: this.getHeaders(true),
       body: JSON.stringify(body),
     });
-    return this.handleResponse(res);
   },
 
-  async delete(path) {
-    const res = await fetch(this.base + path, {
-      method: 'DELETE',
-      headers: this.getHeaders()
-    });
-    return this.handleResponse(res);
+  delete(endpoint) {
+    return this.request(endpoint, { method: 'DELETE' });
   },
-};
-
-// Cart badge updater
-window.updateCartBadge = function () {
-  const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-  const count = cart.reduce((sum, i) => sum + i.qty, 0);
-  const badge = document.getElementById('cart-count');
-  if (badge) badge.textContent = count;
 };

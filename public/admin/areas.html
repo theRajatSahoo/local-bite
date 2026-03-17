@@ -6,6 +6,12 @@
   <title>Service Areas — LocalBite Admin</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/admin.css" />
+  <script>
+  const token = localStorage.getItem('token');
+  if (!token) {
+    window.location.href = '/admin/login.html';
+  }
+  </script>
 </head>
 <body>
 <div class="admin-layout">
@@ -68,9 +74,17 @@
 <script src="/js/admin-sidebar.js"></script>
 <script>
 async function loadAreas() {
-  const areas = await API.get('/areas/all');
-  document.getElementById('area-count').textContent = `${areas.length} areas`;
+  let areas;
   const tbody = document.getElementById('areas-body');
+  try {
+    areas = await API.get('/areas/all');
+  } catch(e) {
+    console.error('Areas load error:', e);
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#e74c3c;">⚠️ Failed to load areas — <a href="/admin/login.html" style="color:#e74c3c;">Re-login</a></td></tr>`;
+    return;
+  }
+  if (!areas) return; // redirected by api.js
+  document.getElementById('area-count').textContent = `${areas.length} areas`;
   tbody.innerHTML = areas.length === 0
     ? '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">No areas added yet</td></tr>'
     : areas.map(a => `

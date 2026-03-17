@@ -21,31 +21,20 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/restaurants',require('./routes/restaurants'));
 app.use('/api/menu', require('./routes/menu'));
 app.use('/api/orders', require('./routes/orders'));
-app.use('/api/offers', verifyAdmin, require('./routes/offers'));
-app.use('/api/areas', verifyAdmin, require('./routes/areas'));
+app.use('/api/offers', require('./routes/offers'));
+app.use('/api/areas', require('./routes/areas'));
 app.post('/admin/login', (req, res) => {
   const { username, password } = req.body;
 
   if (username === "admin" && password === "1234") {
-    const token = jwt.sign({ role: "admin" }, "secretkey", { expiresIn: "1h" });
+    const token = jwt.sign({ role: "admin" }, process.env.JWT_SECRET || "secretkey", { expiresIn: "1h" });
     return res.json({ token });
   }
 
   res.status(401).json({ message: "Invalid credentials" });
 });
 
-function verifyAdmin(req, res, next) {
-  const token = req.headers.authorization;
 
-  if (!token) return res.status(403).send("Access Denied");
-
-  try {
-    jwt.verify(token, "secretkey");
-    next();
-  } catch {
-    res.status(401).send("Invalid Token");
-  }
-}
 
 
 // Admin SPA fallback for /admin routes

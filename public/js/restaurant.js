@@ -74,7 +74,7 @@ function renderMenuItem(item) {
   }
 
   return `
-    <div class="menu-item" id="item-${item._id}">
+    <div class="menu-item" id="item-${item._id}" data-name="${item.name.replace(/"/g, '&quot;')}" data-price="${item.price}">
       <div class="veg-dot ${item.isVeg ? '' : 'non-veg'}"></div>
       <div class="menu-item-info">
         <h4>${item.name}</h4>
@@ -125,13 +125,15 @@ function decreaseQty(menuItemId) {
   Cart.removeItem(menuItemId);
   const cart = Cart.getCart();
   const existing = cart.find(c => c.menuItemId === menuItemId);
-  const item = document.getElementById(`item-${menuItemId}`);
+  const itemEl = document.getElementById(`item-${menuItemId}`);
   if (!existing) {
-    // Re-render add button
-    const btn = item.querySelector('.qty-control');
-    if (btn) btn.outerHTML = `<button class="add-btn" onclick="addToCart('${menuItemId}','','0')">+ Add</button>`;
+    // Read name and price from data attributes to rebuild the Add button correctly
+    const name = itemEl ? itemEl.dataset.name || '' : '';
+    const price = itemEl ? Number(itemEl.dataset.price) || 0 : 0;
+    const btn = itemEl && itemEl.querySelector('.qty-control');
+    if (btn) btn.outerHTML = `<button class="add-btn" onclick="addToCart('${menuItemId}','${name.replace(/'/g, "\\'")}',${price})">+ Add</button>`;
   } else {
-    item.querySelector('.qty-num').textContent = existing.qty;
+    itemEl.querySelector('.qty-num').textContent = existing.qty;
   }
   renderSidebarCart();
   updateCartBadge();

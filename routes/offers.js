@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Offer = require('../models/Offer');
+const { verifyAdmin } = require('../middleware/auth');
 
 // GET offers (optionally filter by restaurantId, only active)
 router.get('/', async (req, res) => {
@@ -27,7 +28,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET all offers (admin, no active filter)
-router.get('/all', async (req, res) => {
+router.get('/all', verifyAdmin, async (req, res) => {
   try {
     const offers = await Offer.find().sort({ createdAt: -1 }).populate('restaurantId', 'name');
     res.json(offers);
@@ -37,7 +38,7 @@ router.get('/all', async (req, res) => {
 });
 
 // POST create offer (admin)
-router.post('/', async (req, res) => {
+router.post('/', verifyAdmin, async (req, res) => {
   try {
     const offer = new Offer(req.body);
     await offer.save();
@@ -48,7 +49,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT update offer (admin)
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyAdmin, async (req, res) => {
   try {
     const offer = await Offer.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!offer) return res.status(404).json({ error: 'Offer not found' });
@@ -59,7 +60,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // PATCH toggle active (admin)
-router.patch('/:id/toggle', async (req, res) => {
+router.patch('/:id/toggle', verifyAdmin, async (req, res) => {
   try {
     const offer = await Offer.findById(req.params.id);
     if (!offer) return res.status(404).json({ error: 'Offer not found' });
@@ -72,7 +73,7 @@ router.patch('/:id/toggle', async (req, res) => {
 });
 
 // DELETE offer (admin)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyAdmin, async (req, res) => {
   try {
     await Offer.findByIdAndDelete(req.params.id);
     res.json({ message: 'Offer deleted' });

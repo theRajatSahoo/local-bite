@@ -6,6 +6,12 @@
   <title>Menu Items — LocalBite Admin</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/admin.css" />
+  <script>
+  const token = localStorage.getItem('token');
+  if (!token) {
+    window.location.href = '/admin/login.html';
+  }
+  </script>
 </head>
 <body>
 <div class="admin-layout">

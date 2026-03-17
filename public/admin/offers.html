@@ -6,6 +6,12 @@
   <title>Offers — LocalBite Admin</title>
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/admin.css" />
+  <script>
+  const token = localStorage.getItem('token');
+  if (!token) {
+    window.location.href = '/admin/login.html';
+  }
+  </script>
 </head>
 <body>
 <div class="admin-layout">
@@ -195,8 +201,16 @@ const REWARD_LABELS = { fixed_price:'Fixed Price', percentage_off:'% Off', flat_
 const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 async function loadOffers() {
-  const offers = await API.get('/offers/all');
+  let offers;
   const tbody = document.getElementById('offers-body');
+  try {
+    offers = await API.get('/offers/all');
+  } catch(e) {
+    console.error('Offers load error:', e);
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#e74c3c;">⚠️ Failed to load offers — <a href="/admin/login.html" style="color:#e74c3c;">Re-login</a></td></tr>`;
+    return;
+  }
+  if (!offers) return; // redirected by api.js
   if (!offers.length) { tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text-muted);">No offers yet. Create one!</td></tr>'; return; }
   tbody.innerHTML = offers.map(o => {
     const conds = [];
@@ -223,9 +237,12 @@ async function loadOffers() {
 }
 
 async function loadRestaurants() {
-  const rests = await API.get('/restaurants');
-  const sel = document.getElementById('o-restaurant');
-  sel.innerHTML = '<option value="">All Restaurants</option>' + rests.map(r=>`<option value="${r._id}">${r.name}</option>`).join('');
+  try {
+    const rests = await API.get('/restaurants');
+    if (!rests) return;
+    const sel = document.getElementById('o-restaurant');
+    sel.innerHTML = '<option value="">All Restaurants</option>' + rests.map(r=>`<option value="${r._id}">${r.name}</option>`).join('');
+  } catch(e) { console.error('Restaurants load error:', e); }
 }
 
 async function loadMenuItems() {

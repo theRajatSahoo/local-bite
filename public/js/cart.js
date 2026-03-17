@@ -84,3 +84,13 @@ const Loyalty = {
     return streak;
   },
 };
+// ===== UPDATE CART BADGE =====
+function updateCartBadge() {
+  const count = Cart.getCount();
+
+  const badge = document.getElementById("cart-count");
+  if (badge) {
+    badge.innerText = count;
+    badge.style.display = count > 0 ? "inline-block" : "none";
+  }
+}

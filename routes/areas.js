@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const ServiceArea = require('../models/ServiceArea');
+const { verifyAdmin } = require('../middleware/auth');
 
 // GET all active areas (used in frontend dropdown)
 router.get('/', async (req, res) => {
@@ -13,7 +14,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET all areas including inactive (admin)
-router.get('/all', async (req, res) => {
+router.get('/all', verifyAdmin, async (req, res) => {
   try {
     const areas = await ServiceArea.find().sort({ name: 1 });
     res.json(areas);
@@ -23,7 +24,7 @@ router.get('/all', async (req, res) => {
 });
 
 // POST add area (admin)
-router.post('/', async (req, res) => {
+router.post('/', verifyAdmin, async (req, res) => {
   try {
     const area = new ServiceArea(req.body);
     await area.save();
@@ -34,7 +35,7 @@ router.post('/', async (req, res) => {
 });
 
 // PATCH toggle active (admin)
-router.patch('/:id/toggle', async (req, res) => {
+router.patch('/:id/toggle', verifyAdmin, async (req, res) => {
   try {
     const area = await ServiceArea.findById(req.params.id);
     if (!area) return res.status(404).json({ error: 'Area not found' });
@@ -47,7 +48,7 @@ router.patch('/:id/toggle', async (req, res) => {
 });
 
 // DELETE area (admin)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyAdmin, async (req, res) => {
   try {
     await ServiceArea.findByIdAndDelete(req.params.id);
     res.json({ message: 'Area deleted' });

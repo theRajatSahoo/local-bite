@@ -83,6 +83,7 @@
       const [orders, restaurants, areas, offers] = await Promise.all([
         API.get('/orders'), API.get('/restaurants'), API.get('/areas/all'), API.get('/offers/all')
       ]);
+      if (!orders || !restaurants || !areas || !offers) return; // redirected by api.js
       const today = new Date().toDateString();
       const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === today);
       const pending = orders.filter(o => o.status !== 'Delivered');
@@ -107,7 +108,14 @@
             <td style="color:var(--text-muted);">${new Date(o.createdAt).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'})}</td>
           </tr>
         `).join('');
-    } catch(e) { console.error(e); }
+    } catch(e) {
+      console.error('Dashboard load error:', e);
+      ['stat-orders','stat-today','stat-restaurants','stat-areas','stat-offers','stat-pending'].forEach(id => {
+        document.getElementById(id).textContent = '!';
+      });
+      document.getElementById('recent-orders-body').innerHTML =
+        `<tr><td colspan="6" style="text-align:center;color:#e74c3c;">⚠️ Failed to load data — <a href="/admin/login.html" style="color:#e74c3c;">Re-login</a></td></tr>`;
+    }
   }
   loadDashboard();
 </script>

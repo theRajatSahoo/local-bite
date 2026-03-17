@@ -6,15 +6,21 @@ const EMOJI_MAP = {
 };
 
 async function init() {
-  updateCartBadge();
-  await loadAreas();
-  await loadRestaurants();
-  await loadOffers();
-}
+  try {
+    if (typeof updateCartBadge === "function") {
+      updateCartBadge();
+    }
 
+    await loadAreas();
+    await loadRestaurants();
+    await loadOffers();
+  } catch (e) {
+    console.error("Init failed:", e);
+  }
+}
 async function loadAreas() {
   try {
-    const areas = await API.get('/areas');
+    const areas = await API.request('/areas');
     const sel = document.getElementById('area-select');
     sel.innerHTML = '<option value="">Select your area</option>' +
       areas.map(a => `<option value="${a.name}">${a.name}</option>`).join('');
@@ -27,7 +33,7 @@ async function loadAreas() {
 
 async function loadRestaurants() {
   try {
-    const restaurants = await API.get('/restaurants');
+    const restaurants = await API.request('/restaurants');
     const grid = document.getElementById('restaurants-grid');
     document.getElementById('restaurant-count').textContent = `${restaurants.length} restaurants found`;
     if (restaurants.length === 0) {
@@ -58,7 +64,7 @@ async function loadRestaurants() {
 
 async function loadOffers() {
   try {
-    const offers = await API.get('/offers');
+    const offers = await API.request('/offers');
     const wrapper = document.getElementById('offer-banners-wrapper');
     if (!wrapper || offers.length === 0) return;
 
