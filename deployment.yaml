@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: local-bite-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: local-bite
+  template:
+    metadata:
+      labels:
+        app: local-bite
+    spec:
+      containers:
+      - name: local-bite-container
+        image: rajatsahoo/local-bite-app:latest
+        ports:
+        - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: local-bite-service
+spec:
+  selector:
+    app: local-bite
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
+  type: NodePort
