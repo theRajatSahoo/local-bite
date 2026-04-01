@@ -6,27 +6,29 @@ spec:
   replicas: 2
   selector:
     matchLabels:
-      app: local-bite
+      app: local-bite-app
   template:
     metadata:
       labels:
-        app: local-bite
+        app: local-bite-app
     spec:
       containers:
-      - name: local-bite-container
+      - name: local-bite-app
         image: rajatsahoo/local-bite-app:latest
         ports:
         - containerPort: 5000
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: local-bite-service
-spec:
-  selector:
-    app: local-bite
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 5000
-  type: NodePort
+        env:
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: local-bite-secret
+              key: MONGO_URI
+        - name: PORT
+          value: "5000"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: local-bite-secret
+              key: JWT_SECRET
+
+
